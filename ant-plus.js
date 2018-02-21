@@ -2,6 +2,7 @@ var Ant = require('./build/ant');
 var HRS = require('./build/heart-rate-sensors');
 var SSD = require('./build/stride-speed-distance-sensors');
 var SC = require('./build/speed-cadence-sensors');
+var C = require('./build/cadence-sensors');
 var BP = require('./build/bicycle-power-sensors');
 var FE = require('./build/fitness-equipment-sensors');
 
@@ -12,6 +13,8 @@ module.exports = {
 	HeartRateScanner: HRS.HeartRateScanner,
 	StrideSpeedDistanceSensor: SSD.StrideSpeedDistanceSensor,
 	StrideSpeedDistanceScanner: SSD.StrideSpeedDistanceScanner,
+	CadenceSensor: C.CadenceSensor,
+	CadenceScanner: C.CadenceScanner,
 	SpeedCadenceSensor: SC.SpeedCadenceSensor,
 	SpeedCadenceScanner: SC.SpeedCadenceScanner,
 	BicyclePowerSensor: BP.BicyclePowerSensor,
