@@ -1,5 +1,5 @@
 {
-	"name": "ant-plus",
+	"name": "@magnushakansson/ant-plus",
 	"version": "0.0.19",
 	"description": "A node module for ANT+",
 	"main": "ant-plus.js",
