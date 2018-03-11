@@ -17,7 +17,8 @@ cadenceSensor.on('cadenceData', data => {
 
 stick.on('startup', function () {
 	console.log('startup');
-	speedCadenceSensor.attach(0, 0);
+	speedSensor.attach(0, 0);
+	cadenceSensor.attach(0, 0);
 });
 
 if (!stick.open()) {
