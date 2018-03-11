@@ -51,7 +51,6 @@ export class SpeedSensor extends Ant.AntPlusSensor {
 	decodeData(data: Buffer) {
 		//console.log("decodeData");
 		if (data.readUInt8(Messages.BUFFER_INDEX_CHANNEL_NUM) !== this.channel) {
-			console.log("bad channel");
 			return;
 		}
 
@@ -107,7 +106,6 @@ export class SpeedScanner extends Ant.AntPlusScanner {
 		const deviceType = data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 3);
 
 		if (deviceType !== SpeedScanner.deviceType) {
-			console.log("Bad device");
 			return;
 		}
 

@@ -33,7 +33,7 @@ export class CadenceSensor extends Ant.AntPlusSensor {
 	static deviceType = 0x7A;
 
 	public attach(channel, deviceID): void {
-		console.log("deviceID: ", deviceID, ", SpeedCadenceSensor.deviceType: ", CadenceSensor.deviceType);
+		console.log("deviceID: ", deviceID, ", CadenceSensor.deviceType: ", CadenceSensor.deviceType);
 		super.attach(channel, 'receive', deviceID, CadenceSensor.deviceType, 0, 255, 8102);
 		this.state = new CadenceSensorState(deviceID);
 	}
@@ -43,7 +43,6 @@ export class CadenceSensor extends Ant.AntPlusSensor {
 	decodeData(data: Buffer) {
 		//console.log("decodeData");
 		if (data.readUInt8(Messages.BUFFER_INDEX_CHANNEL_NUM) !== this.channel) {
-			console.log("bad channel");
 			return;
 		}
 
@@ -93,7 +92,6 @@ export class CadenceScanner extends Ant.AntPlusScanner {
 		const deviceType = data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 3);
 
 		if (deviceType !== CadenceScanner.deviceType) {
-			console.log("Bad device");
 			return;
 		}
 
