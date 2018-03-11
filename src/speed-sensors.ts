@@ -8,37 +8,45 @@ import Ant = require('./ant');
 const Messages = Ant.Messages;
 const Constants = Ant.Constants;
 
-class CadenceSensorState {
+class SpeedSensorState {
 	constructor(deviceID: number) {
 		this.DeviceID = deviceID;
 	}
 
 	DeviceID: number;
-	CadenceEventTime: number;
-	CumulativeCadenceRevolutionCount: number;
-	CalculatedCadence: number;
+	SpeedEventTime: number;
+	CumulativeSpeedRevolutionCount: number;
+	CalculatedDistance: number;
+	CalculatedSpeed: number;
 }
 
-class CadenceScanState extends CadenceSensorState {
+class SpeedScanState extends SpeedSensorState {
 	Rssi: number;
 	Threshold: number;
 }
 
-export class CadenceSensor extends Ant.AntPlusSensor {
+export class SpeedSensor extends Ant.AntPlusSensor {
 	constructor(stick) {
 		super(stick);
 		this.decodeDataCbk = this.decodeData.bind(this);
 	}
 
-	static deviceType = 0x7A;
+	static deviceType = 0x7B;
 
-	public attach(channel, deviceID): void {
-		console.log("deviceID: ", deviceID, ", SpeedCadenceSensor.deviceType: ", CadenceSensor.deviceType);
-		super.attach(channel, 'receive', deviceID, CadenceSensor.deviceType, 0, 255, 8102);
-		this.state = new CadenceSensorState(deviceID);
+	wheelCircumference: number = 2.118; //This is my 700c wheel, just using as default
+
+	setWheelCircumference(wheelCircumference: number) {
+		this.wheelCircumference = wheelCircumference;
 	}
 
-	private state: CadenceSensorState;
+
+	public attach(channel, deviceID): void {
+		console.log("deviceID: ", deviceID, ", SpeedSensor.deviceType: ", SpeedSensor.deviceType);
+		super.attach(channel, 'receive', deviceID, SpeedSensor.deviceType, 0, 255, 8118);
+		this.state = new SpeedSensorState(deviceID);
+	}
+
+	private state: SpeedSensorState;
 
 	decodeData(data: Buffer) {
 		//console.log("decodeData");
@@ -69,19 +77,25 @@ export class CadenceSensor extends Ant.AntPlusSensor {
 
 }
 
-export class CadenceScanner extends Ant.AntPlusScanner {
+export class SpeedScanner extends Ant.AntPlusScanner {
 	constructor(stick) {
 		super(stick);
 		this.decodeDataCbk = this.decodeData.bind(this);
 	}
 
-	static deviceType = 0x7A;
+	static deviceType = 0x7B;
+
+	wheelCircumference: number = 2.118; //This is my 700c wheel, just using as default
+
+	setWheelCircumference(wheelCircumference: number) {
+		this.wheelCircumference = wheelCircumference;
+	}
 
 	public scan() {
 		super.scan('receive');
 	}
 
-	private states: { [id: number]: CadenceScanState } = {};
+	private states: { [id: number]: SpeedScanState } = {};
 
 	decodeData(data: Buffer) {
 		if (data.length <= (Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 3) || !(data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN) & 0x80)) {
@@ -92,13 +106,13 @@ export class CadenceScanner extends Ant.AntPlusScanner {
 		const deviceId = data.readUInt16LE(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 1);
 		const deviceType = data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN + 3);
 
-		if (deviceType !== CadenceScanner.deviceType) {
+		if (deviceType !== SpeedScanner.deviceType) {
 			console.log("Bad device");
 			return;
 		}
 
 		if (!this.states[deviceId]) {
-			this.states[deviceId] = new CadenceScanState(deviceId);
+			this.states[deviceId] = new SpeedScanState(deviceId);
 		}
 
 		if (data.readUInt8(Messages.BUFFER_INDEX_EXT_MSG_BEGIN) & 0x40) {
@@ -121,33 +135,34 @@ export class CadenceScanner extends Ant.AntPlusScanner {
 }
 
 function updateState(
-	sensor: CadenceSensor | CadenceScanner,
-	state: CadenceSensorState | CadenceScanState,
+	sensor: SpeedSensor | SpeedScanner,
+	state: SpeedSensorState | SpeedScanState,
 	data: Buffer) {
 //	console.log("updateState");
 
 	//get old state for calculating cumulative values
-	const oldCadenceTime = state.CadenceEventTime;
-	const oldCadenceCount = state.CumulativeCadenceRevolutionCount;
+	const oldSpeedTime = state.SpeedEventTime;
+	const oldSpeedCount = state.CumulativeSpeedRevolutionCount;
 
-	let cadenceTime = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 4);
-	const cadenceCount = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 6);
-	console.log("cadenceTime: ", cadenceTime, ", cadenceCount: ", cadenceCount);
+	let speedEventTime = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 4);
+	const speedRevolutionCount = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 6);
 
-	if (true || cadenceTime !== oldCadenceTime) {
-		state.CadenceEventTime = cadenceTime;
-		state.CumulativeCadenceRevolutionCount = cadenceCount;
-		if (oldCadenceTime > cadenceTime) { //Hit rollover value
-			cadenceTime += (1024 * 64);
+	if (speedEventTime !== oldSpeedTime) {
+		state.SpeedEventTime = speedEventTime;
+		state.CumulativeSpeedRevolutionCount = speedRevolutionCount;
+		if (oldSpeedTime > speedEventTime) { //Hit rollover value
+			speedEventTime += (1024 * 64);
 		}
 
-		const cadence = ((60 * (cadenceCount - oldCadenceCount) * 1024) / (cadenceTime - oldCadenceTime));
-		if (isNaN(cadence)) {
-			state.CalculatedCadence = 0;
-		} else {
-			state.CalculatedCadence = cadence;
+		const distance = sensor.wheelCircumference * (speedRevolutionCount - oldSpeedCount);
+		state.CalculatedDistance = distance;
+
+		//speed in m/sec
+		const speed = (distance * 1024) / (speedEventTime - oldSpeedTime);
+		if (!isNaN(speed)) {
+			state.CalculatedSpeed = speed;
+			sensor.emit('speedData', state);
 		}
-		sensor.emit('cadenceData', state);
 	}
 }
 
