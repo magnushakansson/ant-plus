@@ -138,7 +138,6 @@ function updateState(
 	sensor: SpeedSensor | SpeedScanner,
 	state: SpeedSensorState | SpeedScanState,
 	data: Buffer) {
-//	console.log("updateState");
 
 	//get old state for calculating cumulative values
 	const oldSpeedTime = state.SpeedEventTime;

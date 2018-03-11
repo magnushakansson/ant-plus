@@ -124,7 +124,6 @@ function updateState(
 	sensor: CadenceSensor | CadenceScanner,
 	state: CadenceSensorState | CadenceScanState,
 	data: Buffer) {
-//	console.log("updateState");
 
 	//get old state for calculating cumulative values
 	const oldCadenceTime = state.CadenceEventTime;
@@ -132,7 +131,6 @@ function updateState(
 
 	let cadenceTime = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 4);
 	const cadenceCount = data.readUInt16LE(Messages.BUFFER_INDEX_MSG_DATA + 6);
-	console.log("cadenceTime: ", cadenceTime, ", cadenceCount: ", cadenceCount);
 
 	if (true || cadenceTime !== oldCadenceTime) {
 		state.CadenceEventTime = cadenceTime;
